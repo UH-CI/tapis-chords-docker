@@ -39,14 +39,14 @@ version: '2'
 
 services:
   # CHORDS Rails application: nginx + rails + CHORDS rails code
-  streams:
-    container_name: streamsapi
-    image: tapis/streams-api:dev
-    ports:
-      - 5000:5000
+  # streams:
+  #   container_name: streamsapi
+  #   image: tapis/streams-api:dev
+  #   ports:
+  #     - 5000:5000
   app:
     container_name: chords_app
-    image: scleveland/chords:api
+    image: scleveland/tapis-chords-app:0.9.8.2.3
     #${DOCKER_TAG}
     volumes:
       - mysql-data:/var/lib/mysql
@@ -68,6 +68,11 @@ services:
       - CHORDS_EMAIL_ADDRESS=${CHORDS_EMAIL_ADDRESS}
       - CHORDS_EMAIL_PASSWORD=${CHORDS_EMAIL_PASSWORD}
       - WORKERS=${WORKERS}
+      - CHORDS_MYSQL_HOST=mysql
+      - CHORDS_MYSQL_PORT=3306
+      - CHORDS_PORTAL_ADMIN_USER=streams@admin.tapis
+      - CHORDS_PORTAL_ADMIN_PASSWORD=streamsrealtime
+      - CHORDS_API_KEY=myapitokenkeything
       # Note: INFLUXDB_ variables are used by the Influxer gem, meaning that
       # you should NOT create your own variables beginning with INFLUXDB_.
       - INFLUXDB_USERNAME=admin
@@ -125,6 +130,28 @@ services:
     ports:
       - 8086:8086
       - 8083:8083
+
+  influxdb2.0.0:
+    container_name: chords_influxdb2.0.0
+    image: influxdb:2.0
+    volumes:
+      - influxdb-data2.0.0:/var/lib/influxdb
+      - influxdb-log2.0.0:/var/log/influxdb
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=${CHORDS_ADMIN_PW}
+      - DOCKER_INFLUXDB_INIT_ORG=tapis
+      - DOCKER_INFLUXDB_INIT_BUCKET=streams
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=myawesometapisoken
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+    ports:
+      - 8087:8086
+      - 8084:8083
 
   # InfluxData kapacitor time series monitoring
   kapacitor:
@@ -200,6 +227,7 @@ volumes:
   mysql-data:
   # CHORDS time-series data
   influxdb-data:
+  influxdb-data2.0.0:
   # kapacitor data
   kapacitor-data:
   # Grafana configuration data
@@ -211,5 +239,6 @@ volumes:
   nginx-log:
   mysql-log:
   influxdb-log:
+  influxdb-log2.0.0:
   kapacitor-log:
   grafana-log:
